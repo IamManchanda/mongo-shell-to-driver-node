@@ -2,16 +2,10 @@ const path = require("path");
 
 const express = require("express");
 const bodyParser = require("body-parser");
-const { MongoClient } = require("mongodb");
-
-require("dotenv").config({
-  path: "./config/config.env",
-});
-
-const { MONGO_URI } = process.env;
 
 const productRoutes = require("./routes/products");
 const authRoutes = require("./routes/auth");
+const db = require("./db");
 
 const app = express();
 
@@ -31,17 +25,11 @@ app.use((req, res, next) => {
 
 app.use("/products", productRoutes);
 app.use("/", authRoutes);
-
-MongoClient.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(function connectMongoClient(client) {
-    console.log("Connected to the MongoDB cluster.");
-    client.close();
-  })
-  .catch(function catchErrorMongoClient(error) {
+db.initDb(function handleDatabaseInit(error, db) {
+  if (error) {
     console.log(error);
-  });
-
-app.listen(3100);
+  } else {
+    console.log("Web API Server successfully initialized.");
+    app.listen(3100);
+  }
+});

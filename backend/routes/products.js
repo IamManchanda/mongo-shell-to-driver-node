@@ -1,15 +1,10 @@
 const { Router } = require("express");
-const { MongoClient, Decimal128 } = require("mongodb");
-
-require("dotenv").config({
-  path: "./config/config.env",
-});
-
-const { MONGO_URI } = process.env;
+const { Decimal128, ObjectId } = require("mongodb");
 
 const router = Router();
+const db = require("../db");
 
-const products = [
+/* const products = [
   {
     _id: "fasdlk1j",
     name: "Stylish Backpack",
@@ -56,7 +51,7 @@ const products = [
     price: 299.99,
     image: "http://localhost:3100/images/product-watch.jpg",
   },
-];
+]; */
 
 // Get list of products products
 router.get("/", (req, res, next) => {
@@ -71,31 +66,19 @@ router.get("/", (req, res, next) => {
     );
   }; 
   */
-  MongoClient.connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-    .then(function handleConnectMongoClient(client) {
-      const products = [];
-      client
-        .db()
-        .collection("products")
-        .find()
-        .forEach(function handleProductIteration(productDoc) {
-          productDoc.price = productDoc.price.toString();
-          products.push(productDoc);
-        })
-        .then(function handleAllProducts() {
-          client.close();
-          res.status(200).json(products);
-        })
-        .catch(function catchErrorAllProducts(error) {
-          console.log(error);
-          client.close();
-          res.status(500).json({ message: "An error occurred." });
-        });
+  const products = [];
+  db.getDb()
+    .db()
+    .collection("products")
+    .find()
+    .forEach(function handleProductIteration(productDoc) {
+      productDoc.price = productDoc.price.toString();
+      products.push(productDoc);
     })
-    .catch(function catchErrorMongoClient(error) {
+    .then(function handleAllProducts() {
+      res.status(200).json(products);
+    })
+    .catch(function catchErrorAllProducts(error) {
       console.log(error);
       res.status(500).json({ message: "An error occurred." });
     });
@@ -103,8 +86,20 @@ router.get("/", (req, res, next) => {
 
 // Get single product
 router.get("/:id", (req, res, next) => {
-  const product = products.find((p) => p._id === req.params.id);
-  res.json(product);
+  db.getDb()
+    .db()
+    .collection("products")
+    .findOne({
+      _id: new ObjectId(req.params.id),
+    })
+    .then(function handleSingleProduct(productDoc) {
+      productDoc.price = productDoc.price.toString();
+      res.status(200).json(productDoc);
+    })
+    .catch(function catchErrorSingleProduct(error) {
+      console.log(error);
+      res.status(500).json({ message: "An error occurred." });
+    });
 });
 
 // Add new product
@@ -116,29 +111,17 @@ router.post("", (req, res, next) => {
     price: Decimal128.fromString(req.body.price.toString()), // store this as 128bit decimal in MongoDB
     image: req.body.image,
   };
-  MongoClient.connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-    .then(function handleConnectMongoClient(client) {
-      client
-        .db()
-        .collection("products")
-        .insertOne(newProduct)
-        .then(function handleProductInsertion(result) {
-          client.close();
-          res.status(200).json({
-            message: "Product inserted successfully.",
-            productId: result.insertedId,
-          });
-        })
-        .catch(function catchErrorProductInsertion(error) {
-          console.log(error);
-          client.close();
-          res.status(500).json({ message: "An error occurred." });
-        });
+  db.getDb()
+    .db()
+    .collection("products")
+    .insertOne(newProduct)
+    .then(function handleProductInsertion(result) {
+      res.status(200).json({
+        message: "Product inserted successfully.",
+        productId: result.insertedId,
+      });
     })
-    .catch(function catchErrorMongoClient(error) {
+    .catch(function catchErrorProductInsertion(error) {
       console.log(error);
       res.status(500).json({ message: "An error occurred." });
     });
