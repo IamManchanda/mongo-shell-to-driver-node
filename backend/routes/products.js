@@ -1,5 +1,5 @@
 const { Router } = require("express");
-const { MongoClient } = require("mongodb");
+const { MongoClient, Decimal128 } = require("mongodb");
 
 require("dotenv").config({
   path: "./config/config.env",
@@ -86,17 +86,32 @@ router.post("", (req, res, next) => {
   const newProduct = {
     name: req.body.name,
     description: req.body.description,
-    price: parseFloat(req.body.price), // store this as 128bit decimal in MongoDB
+    price: Decimal128.fromString(req.body.price.toString()), // store this as 128bit decimal in MongoDB
     image: req.body.image,
   };
   MongoClient.connect(MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-    .then(function connectMongoClient(client) {
+    .then(function handleConnectMongoClient(client) {
       console.log("Connected to the MongoDB cluster from product route");
-      client.db().collection("products").insertOne(newProduct);
-      client.close();
+      client
+        .db()
+        .collection("products")
+        .insertOne(newProduct)
+        .then(function handleProductInsertion(result) {
+          console.log(result);
+          client.close();
+          res.status(200).json({
+            message: "Product inserted successfully.",
+            productId: result.insertedId,
+          });
+        })
+        .catch(function catchErrorProductInsertion() {
+          console.log(error);
+          client.close();
+          res.status(500).json({ message: "An error occurred." });
+        });
     })
     .catch(function catchErrorMongoClient(error) {
       console.log(error);
