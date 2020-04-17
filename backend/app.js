@@ -37,7 +37,7 @@ MongoClient.connect(MONGO_URI, {
   useUnifiedTopology: true,
 })
   .then(function connectMongoClient(client) {
-    console.log("Connected to the MongoDB cluster");
+    console.log("Connected to the MongoDB cluster from main app");
     client.close();
   })
   .catch(function catchErrorMongoClient(error) {
