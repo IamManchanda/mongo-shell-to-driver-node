@@ -60,18 +60,45 @@ const products = [
 
 // Get list of products products
 router.get("/", (req, res, next) => {
-  // Return a list of dummy products
-  // Later, this data will be fetched from MongoDB
+  /* 
   const queryPage = req.query.page;
   const pageSize = 5;
   let resultProducts = [...products];
-  if (queryPage) {
-    resultProducts = products.slice(
-      (queryPage - 1) * pageSize,
-      queryPage * pageSize,
+  if (queryPage) {;
+    resultProducts = products.slice(;
+      (queryPage - 1) * pageSize,;
+      queryPage * pageSize,;
     );
-  }
-  res.json(resultProducts);
+  }; 
+  */
+  MongoClient.connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+    .then(function handleConnectMongoClient(client) {
+      const products = [];
+      client
+        .db()
+        .collection("products")
+        .find()
+        .forEach(function handleProductIteration(productDoc) {
+          productDoc.price = productDoc.price.toString();
+          products.push(productDoc);
+        })
+        .then(function handleAllProducts() {
+          client.close();
+          res.status(200).json(products);
+        })
+        .catch(function catchErrorAllProducts(error) {
+          console.log(error);
+          client.close();
+          res.status(500).json({ message: "An error occurred." });
+        });
+    })
+    .catch(function catchErrorMongoClient(error) {
+      console.log(error);
+      res.status(500).json({ message: "An error occurred." });
+    });
 });
 
 // Get single product
@@ -94,20 +121,18 @@ router.post("", (req, res, next) => {
     useUnifiedTopology: true,
   })
     .then(function handleConnectMongoClient(client) {
-      console.log("Connected to the MongoDB cluster from product route");
       client
         .db()
         .collection("products")
         .insertOne(newProduct)
         .then(function handleProductInsertion(result) {
-          console.log(result);
           client.close();
           res.status(200).json({
             message: "Product inserted successfully.",
             productId: result.insertedId,
           });
         })
-        .catch(function catchErrorProductInsertion() {
+        .catch(function catchErrorProductInsertion(error) {
           console.log(error);
           client.close();
           res.status(500).json({ message: "An error occurred." });
@@ -115,9 +140,8 @@ router.post("", (req, res, next) => {
     })
     .catch(function catchErrorMongoClient(error) {
       console.log(error);
+      res.status(500).json({ message: "An error occurred." });
     });
-  console.log(newProduct);
-  res.status(201).json({ message: "Product added", productId: "DUMMY" });
 });
 
 // Edit existing product
