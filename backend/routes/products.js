@@ -55,22 +55,17 @@ const db = require("../db");
 
 // Get list of products products
 router.get("/", (req, res, next) => {
-  /* 
-  const queryPage = req.query.page;
-  const pageSize = 5;
-  let resultProducts = [...products];
-  if (queryPage) {;
-    resultProducts = products.slice(;
-      (queryPage - 1) * pageSize,;
-      queryPage * pageSize,;
-    );
-  }; 
-  */
+  /* Commented logic is for Pagination & Sorting, if needs to be implemented */
+  /* const queryPage = req.query.page;
+  const pageSize = 2; */
   const products = [];
   db.getDb()
     .db()
     .collection("products")
     .find()
+    /* .sort({ price: -1 });
+    .skip((queryPage - 1) * pageSize);
+    .limit(pageSize); */
     .forEach(function handleProductIteration(productDoc) {
       productDoc.price = productDoc.price.toString();
       products.push(productDoc);
@@ -80,7 +75,9 @@ router.get("/", (req, res, next) => {
     })
     .catch(function catchErrorAllProducts(error) {
       console.log(error);
-      res.status(500).json({ message: "An error occurred." });
+      res.status(500).json({
+        message: "An error occurred.",
+      });
     });
 });
 
