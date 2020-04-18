@@ -13,12 +13,32 @@ router.post("/login", (req, res, next) => {
   const email = req.body.email;
   const pw = req.body.password;
   // Check if user login is valid
-  // If yes, create token and return it to client
-  const token = createToken();
-  // res.status(200).json({ token: token, user: { email: 'dummy@dummy.com' } });
-  res
-    .status(401)
-    .json({ message: "Authentication failed, invalid username or password." });
+  db.getDb()
+    .db()
+    .collection("users")
+    .findOne({ email })
+    .then(function compareBcryptPassword(userDoc) {
+      return bcrypt.compare(pw, userDoc.password);
+    })
+    .then(function handleUserLogin(result) {
+      if (!result) {
+        return res.status(401).json({
+          message: "Authentication failed, email exists but invalid password.",
+        });
+      }
+      const token = createToken();
+      res.status(200).json({
+        message: "Authentication succeded.",
+        token: token,
+        user: { email },
+      });
+    })
+    .catch(function catchErrorUserLogin(error) {
+      console.log(error);
+      res.status(401).json({
+        message: "Authentication failed, invalid username or password.",
+      });
+    });
 });
 
 router.post("/signup", (req, res, next) => {
