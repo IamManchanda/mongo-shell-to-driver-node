@@ -63,7 +63,7 @@ router.get("/", (req, res, next) => {
     .db()
     .collection("products")
     .find()
-    .sort({ price: -1 });
+    .sort({ price: -1 })
     /* .skip((queryPage - 1) * pageSize);
     .limit(pageSize); */
     .forEach(function handleProductIteration(productDoc) {
